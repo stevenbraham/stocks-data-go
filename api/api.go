@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"stocks-data/models"
 	"time"
@@ -15,7 +16,9 @@ const (
 )
 
 func Lookup(stockSymbol string) models.Company {
-	apiData := DoApiCall(COMPANY_LOOKUP, stockSymbol)
+
+	var apiData []map[string]string
+	json.NewDecoder(DoApiCall(COMPANY_LOOKUP, stockSymbol)).Decode(&apiData)
 	if len(apiData) == 0 {
 		panic("API Error")
 	}
@@ -24,10 +27,17 @@ func Lookup(stockSymbol string) models.Company {
 		Exchange:    apiData[0]["Exchange"],
 		StockSymbol: stockSymbol,
 	}
+	company.StockPrice = StockPrice(stockSymbol)
 	return company
 }
 
-func DoApiCall(method ApiMethod, stockSymbol string) []map[string]string {
+func StockPrice(stockSymbol string) float32 {
+	var apiData map[string]float32
+	json.NewDecoder(DoApiCall(QUOTE_LOOKUP, stockSymbol)).Decode(&apiData)
+	return apiData["LastPrice"]
+}
+
+func DoApiCall(method ApiMethod, stockSymbol string) io.Reader {
 	//prepare url call
 	apiUrl := "http://dev.markitondemand.com/MODApis/Api/v2/"
 	//append appropiate arguments
@@ -42,7 +52,6 @@ func DoApiCall(method ApiMethod, stockSymbol string) []map[string]string {
 	apiClient := http.Client{
 		Timeout: time.Second * 3,
 	}
-
 	request, _ := http.NewRequest(http.MethodGet, apiUrl, nil)
 
 	response, error := apiClient.Do(request)
@@ -51,8 +60,5 @@ func DoApiCall(method ApiMethod, stockSymbol string) []map[string]string {
 		panic("API error")
 	}
 
-	//blank struct to store json data
-	var jsonData []map[string]string
-	json.NewDecoder(response.Body).Decode(&jsonData)
-	return jsonData
+	return response.Body
 }

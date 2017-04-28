@@ -1,9 +1,9 @@
 package main
 
 import (
-	"./api"
 	"fmt"
 	"os"
+	"stocks-data/api"
 )
 
 func main() {
