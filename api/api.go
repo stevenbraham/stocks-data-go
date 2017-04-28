@@ -15,16 +15,19 @@ const (
 )
 
 func Lookup(stockSymbol string) models.Company {
-	DoApiCall(COMPANY_LOOKUP, stockSymbol)
-	return models.Company{
-		Name:        "Google INC",
-		StockPrice:  1,
-		StockSymbol: stockSymbol,
-		Exchange:    "NASDAQ",
+	apiData := DoApiCall(COMPANY_LOOKUP, stockSymbol)
+	if len(apiData) == 0 {
+		panic("API Error")
 	}
+	company := models.Company{
+		Name:        apiData[0]["Name"],
+		Exchange:    apiData[0]["Exchange"],
+		StockSymbol: stockSymbol,
+	}
+	return company
 }
 
-func DoApiCall(method ApiMethod, stockSymbol string) interface{} {
+func DoApiCall(method ApiMethod, stockSymbol string) []map[string]string {
 	//prepare url call
 	apiUrl := "http://dev.markitondemand.com/MODApis/Api/v2/"
 	//append appropiate arguments
@@ -49,6 +52,7 @@ func DoApiCall(method ApiMethod, stockSymbol string) interface{} {
 	}
 
 	//blank struct to store json data
-	var i interface{}
-	return json.NewDecoder(response.Body).Decode(&i)
+	var jsonData []map[string]string
+	json.NewDecoder(response.Body).Decode(&jsonData)
+	return jsonData
 }
